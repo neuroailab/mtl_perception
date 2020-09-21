@@ -1,6 +1,6 @@
 import h5py, pickle, os, numpy as np
 
-def estimate_split_half_correlation(vvs_data_path, n_iterations, metric): 
+def split_half_correlation(vvs_data_path, n_iterations, metric): 
     """
     vvs_data_path = path to ventral_neural_data.hdf5, 
     n_iterations = number of independent split halves 
@@ -44,7 +44,7 @@ def estimate_split_half_correlation(vvs_data_path, n_iterations, metric):
     
     return split_half
 
-def pls_layer_fits(pls_vvs_dir, measure, split_half):
+def layer_fits(pls_vvs_dir, measure, split_half):
 
     model_layers = {}
     for i in os.listdir(pls_vvs_dir):
@@ -90,12 +90,12 @@ if __name__ == '__main__':
 
     # define n iterations for split half reliability analysis 
     n_iterations = 10
-    neural_split_half = estimate_split_half_correlation(vvs_data_path, n_iterations, np.mean)
+    neural_split_half = split_half_correlation(vvs_data_path, n_iterations, np.mean)
     
     # set path to results from pls fitting procedure 
     pls_vvs_dir = os.path.join(electrophysiological_dir, 'pls_fitting_results')
     
     # extract results from pls fitting procedures and adjust by noise ceiling in neural data
-    pls_fits = pls_layer_fits(pls_vvs_dir, np.median, neural_split_half)
+    pls_fits = layer_fits(pls_vvs_dir, np.median, neural_split_half)
 
     print( pls_fits )

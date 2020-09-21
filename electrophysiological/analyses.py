@@ -69,7 +69,7 @@ def layer_fits(pls_vvs_dir, measure, split_half):
     it_fit_corrected = np.array([measure(model_layers[i]['it_test']) / it_noise_ceiling for i in order])
     v4_fit_corrected = np.array([measure(model_layers[i]['v4_test']) / v4_noise_ceiling for i in order])
 
-    delta = it_fit - v4_fit
+    delta = it_fit_corrected - v4_fit_corrected
 
     data = {'it':{'mu':it_fit_corrected, 'std':it_std},
             'v4':{'mu':v4_fit_corrected, 'std':v4_std},

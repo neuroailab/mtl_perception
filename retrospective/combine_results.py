@@ -2,6 +2,45 @@ import os, pandas, pickle, numpy as np
 import statsmodels.formula.api as smf
 import warnings ; warnings.filterwarnings('ignore')
 
+def non_diagnostic_stimuli(): 
+
+    intact = {}
+    lesion = {}
+    contro = {}
+
+    intact['barense'] = [.98, .85, .88]
+    lesion['barense'] = [1., .26, .38]
+    contro['barense'] = [1., .87, .89]
+    intact['inhoff'] = [.71, .65, .53]
+    lesion['inhoff'] = [.47, .45, .27]
+    contro['inhoff'] = [.65, .67, .55]
+    intact['knutson'] = [1.  , 1.  , 0.94, 1.  , 0.75, 0.71, 0.75, 0.25]
+    lesion['knutson'] = [0.99, 0.96, 0.95, 0.84, 0.83, 0.79, 0.79, 0.54]
+    contro['knutson'] = [0.98, 0.9 , 0.92, 0.72, 0.75, 0.29,  np.nan,  np.nan]
+    intact['buffalo'] = [.67]
+    lesion['buffalo']  = [.7]
+    contro['buffalo'] = [.68]
+
+    i = []
+    l = []
+    c = []
+    for study in intact:
+        i.extend(intact[study])
+        l.extend(lesion[study])
+        c.extend(contro[study])
+    i = np.array(i)
+    l = np.array(l)
+    c = np.array(c)
+
+    dictionary = {'intact': intact, 
+                  'lesion': lesion, 
+                  'control': contro}
+
+    vector = {'intact': i, 'lesion': l, 'control': c}
+    
+
+    return { 'studies': dictionary, 'flat': vector }
+
 def across_studies(it_layer, v4_layer, base_directory): 
 
     ############### STARK
@@ -268,10 +307,9 @@ def across_studies(it_layer, v4_layer, base_directory):
                                      'hpc_delta_rmse': hpc_intact_rmse-hpc_lesion_rmse, 
                                      'layer': layers})
 
-
-
-
-    return meta_df, layer_data
+    non_diagnostic = non_diagnostic_stimuli()
+    
+    return meta_df, layer_data, non_diagnostic
 
 if __name__ == '__main__': 
 

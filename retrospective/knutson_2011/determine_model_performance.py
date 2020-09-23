@@ -108,22 +108,25 @@ def determine_model_performance(model_responses):
     # compute average
     model_performance = {i: np.mean(model_performance[i]) for i in model_performance}
     
+    # save model performance
+    with open('model_performance.pickle', 'wb') as f: 
+        pickle.dump(model_performance, f)
+    
     return model_performance
 
 if __name__ == '__main__': 
-    
+   
+    # set base directory all analyses are contained within
+    base_directory = os.path.abspath('..')
     # location of experimental data
-    base_directory= '/Users/biota/work/mtl_perception/retrospective/knutson_2011/experiment'
+    stimulus_directory  = os.path.join(base_directory, 'experiments/knutson_2011/stimuli')
     # load stimuli information
-    stimuli, difficulty = load_image_data(base_directory)
-    # location of model
-    path_to_model = '/Users/biota/work/perirhinal_cortex/analysis/models/'
+    stimuli, difficulty = load_image_data(stimulus_directory)
+    # set path to model
+    path_to_model = os.path.join(base_directory, 'models')
     # load model
     model, session = define_model(path_to_model)
     # extract model responses to stimuli
     model_responses = model_responses_to_stimuli(model, session, stimuli)
     # determine model performance 
     model_performance = determine_model_performance(model_responses)
-    # save model performance
-    with open('model_performance.pickle', 'wb') as f: 
-        pickle.dump(model_performance, f)

@@ -172,18 +172,19 @@ def determine_model_performance(model_responses):
 
 
 if __name__ == '__main__': 
-    
+   
+    # set base directory all analyses are contained within
+    base_directory = os.path.abspath('..')
     # set path to experimental stimuli
-    stimulus_path = '/Users/biota/work/perirhinal_cortex/analysis/lee_2006/stimuli/'
-    # set path to model 
-    model_path = '/Users/biota/work/perirhinal_cortex/analysis/models/'
-    print( '-- loading experimental stimuli' ) 
+    stimulus_path = os.path.join(base_directory, 'experiments/lee_2006/stimuli')
+    # load stimuli 
     experimental_stimuli, answer_key = extract_stimuli( stimulus_path )
-    print( '-- loading model' ) 
+    # set path to model 
+    model_path = os.path.join(base_directory, 'models') 
+    # load model 
     model, session = define_model( model_path ) 
-    print( '-- loading model responses to stimuli') 
+    # loading model responses to stimuli') 
     model_responses = extract_model_responses( model, session, experimental_stimuli)
-    print( '-- determine model performance') 
+    # determine model performance') 
     model_performance = determine_model_performance( model_responses )
-    print( '-- results saved in "model_performance.pickle" :)', model_performance)
-
+    # results saved in "model_performance.pickle" 

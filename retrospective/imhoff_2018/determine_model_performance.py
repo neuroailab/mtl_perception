@@ -52,18 +52,23 @@ def model_performance(model, image_path):
                 # store 
                 model_accuracy[markers[condition]].append(correct)
     
-    return model_accuracy
+    # determine average accuracy
+    model_performance = {c: np.mean(model_accuracy[c]) for c in model_accuracy}
+    # save 
+    with open('model_performance.pickle', 'wb') as handle: 
+        pickle.dump(model_performance, handle)   
+    
+    return model_performance
 
 if __name__ == '__main__': 
     
-    # 
-    path_to_model = '/Users/biota/work/perirhinal_cortex/analysis/models/'
-    
+    # set base directory all analyses are contained within
+    base_directory = os.path.abspath('..')
+    # set path to model 
+    path_to_model = os.path.join(base_directory, 'models') 
+    # define model 
     model, session = load_model(path_to_model)
-    
-    image_path = '/Users/biota/work/perirhinal_cortex/analysis/imhoff_2018/stimuli/oddity/'
-
+    # path to stimuli 
+    image_path = os.path.join(base_directory, 'experiments/imhoff_2018/stimuli/oddity') 
+    # determine model performance
     model_accuracy = model_performance(model, image_path)
-
-    with open('model_performance.pickle', 'wb') as handle: 
-        pickle.dump(model_accuracy, handle)

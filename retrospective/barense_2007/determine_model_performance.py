@@ -394,21 +394,23 @@ def evaluate_experiment(experiment, answer_key, df, i_experiment):
 
         i_result = {'accuracy': np.mean( accuracy ), 'experiment':i_experiment, 'layer':i_layer}
         df = df.append(i_result,  ignore_index=True)
-
+    
+    # save 
+    df.to_csv('barense_model_performance.csv')
+    
     return df
 
 if __name__ == '__main__': 
     
-    base_dir = '/Users/biota/work/perirhinal_cortex/analysis/barense_2007/'
-
-    stimulus_dir = base_dir + 'stimuli/'
-
+    # set base directory all analyses are contained within
+    base_directory = os.path.abspath('..')
+    # stimulus directory
+    stimuli_dir = os.path.join(base_directory,'experiments/barense_2007/stimuli')
+    # extract stimuli
     stimuli, answer_key = extract_stimuli_and_answer_key(stimulus_dir) 
-
-    path_to_model = '/Users/biota/work/perirhinal_cortex/analysis/models/'
-    
+    # path to model
+    path_to_model =  os.path.join(base_directory, 'models')
+    # define model
     vgg, session = load_model(path_to_model)
-
+    # determine model performance
     model_performance = determine_model_performance(vgg, session, stimuli, answer_key)
-
-    model_performance.to_csv('barense_model_performance.csv')

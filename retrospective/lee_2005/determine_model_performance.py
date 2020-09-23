@@ -137,19 +137,17 @@ def model_experiment_two(features, answer, n_iterations):
             
     return {l: np.mean(performance[l]) for l in layers}
 
-def experiment_two_model_performance(model, session): 
+def experiment_two_model_performance(model, session, stimulus_directory): 
     
     # add lee 2006 to path 
     sys.path.append(os.path.abspath('..'))
     # load 2006 functions 
     import lee_2006.determine_model_performance as lee
-    # load 2005 stimuli 
-    stimulus_directory = '/Users/biota/work/perirhinal_cortex/analysis/lee_2006/stimuli/'
     # model performance for all stimuli 
     stimuli, answer_key = lee.extract_stimuli(stimulus_directory)
     
     performance = {} 
-    n_iterations = 2
+    n_iterations = 100
 
     for exp in list( stimuli ): 
         print('-- extract model responses for experiment %s'%exp)
@@ -161,16 +159,20 @@ def experiment_two_model_performance(model, session):
 
 if __name__ == '__main__': 
     
-    # path to model 
-    path_to_model = '/Users/biota/work/perirhinal_cortex/analysis/models/'
+    # set base directory all analyses are contained within
+    base_directory = os.path.abspath('..')
+    # set path to model
+    path_to_model = os.path.join(base_directory, 'models')    
     # define model 
     model, session = define_model(path_to_model)
     # path to stimulus directory
-    stim_dir = '/Users/biota/work/mtl_perception/retrospective/lee_2005/stimuli/'
+    stim_dir = os.path.join(base_directory, 'experiments/lee_2005/stimuli') 
     # determine model performance for experiment one
     model_performance = {'experiment_one': model_performance_experiment_one(model, session, stim_dir)}
+    # stimulus directory for shared 2006 experiment
+    shared_directory = os.path.join(base_directory, 'experiments/lee_2006/stimuli')
     # determine model performance for experiment two 
-    model_performance['experiment_two'] = experiment_two_model_performance(model, session)
+    model_performance['experiment_two'] = experiment_two_model_performance(model, session, shared_directory)
     # save 
     with open('model_performance.pickle', 'wb') as handle: 
         pickle.dump(model_performance, handle)

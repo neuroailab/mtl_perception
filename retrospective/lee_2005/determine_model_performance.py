@@ -5,8 +5,6 @@ from sklearn import cluster
 from PIL import Image
 import warnings; warnings.simplefilter('ignore')
 
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
-
 def extract_stimuli(stimulus_directory): 
     
     stimuli = {} 
@@ -31,6 +29,7 @@ def define_model(path_to_model):
     
     import tensorflow.compat.v1 as tf
     tf.disable_v2_behavior()
+    os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
     def get_session():
         config = tf.ConfigProto(allow_soft_placement = True)
@@ -50,7 +49,6 @@ def define_model(path_to_model):
     return vgg, session
 
 def extract_model_responses(vgg, session, stimuli, i_experiment): 
-    """expects dictionary of type stimuli[i_experiment][i_trial]"""
     
     layers = {'conv1_1': vgg.conv1_1, 'conv1_2':vgg.conv1_2, 'pool1': vgg.pool1,
               'conv2_1': vgg.conv2_1, 'conv2_2':vgg.conv2_2, 'pool2': vgg.pool2,

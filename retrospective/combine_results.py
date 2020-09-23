@@ -1,4 +1,4 @@
-import os, pandas, pickle, numpy as np
+import colour, os, pandas, pickle, numpy as np
 import statsmodels.formula.api as smf
 import warnings ; warnings.filterwarnings('ignore')
 
@@ -199,7 +199,7 @@ def lee05(base_directory):
 
     return lee2005
 
-def compute_summary_statistics( meta_df, it_layer, v4_layer): 
+def summary_statistics( meta_df, it_layer, v4_layer): 
     
     meta_df['prc_delta'] = meta_df['prc_intact']-meta_df['prc_lesion']
     meta_df['hpc_delta'] = meta_df['hpc_intact']-meta_df['hpc_lesion']
@@ -271,6 +271,12 @@ def compute_summary_statistics( meta_df, it_layer, v4_layer):
                                      'prc_delta_rmse': prc_intact_rmse-prc_lesion_rmse,
                                      'hpc_delta_rmse': hpc_intact_rmse-hpc_lesion_rmse,
                                      'layer': layers})
+
+    for group in ['prc', 'hpc']: 
+        color_range = {'prc':['#4B0082', '#FF1493'], 'hpc':['#5d13e7', '#1ee3cf']}[group]
+        colors = [i.rgb for i in colour.Color(color_range[0]).range_to(colour.Color(color_range[1]), len(layer_data))]
+        layer_data['%s_colors'%group] = colors
+    
     return meta_df, layer_data
 
 def non_diagnostic_stimuli():

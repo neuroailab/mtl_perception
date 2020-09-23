@@ -7,21 +7,33 @@ import os, sys, imp, itertools, pickle
 import matplotlib.pyplot as plt
 import warnings; warnings.simplefilter('ignore')
 import tensorflow.compat.v1 as tf
-
-os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
-
-def get_session():
-    tf.disable_v2_behavior()
-    config = tf.ConfigProto(allow_soft_placement = True)
-    config.gpu_options.per_process_gpu_memory_fraction = 0.4
-    config.gpu_options.allow_growth = True
-    return {'sess' : tf.Session(config = config)}
-
 a = np.array
 
-def extract_stimuli(): 
+def define_model(path_to_model):
+
+    import tensorflow.compat.v1 as tf
+    tf.disable_v2_behavior()
+    os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+
+    def get_session():
+        config = tf.ConfigProto(allow_soft_placement = True)
+        config.gpu_options.per_process_gpu_memory_fraction = 0.4
+        config.gpu_options.allow_growth = True
+        return tf.Session(config = config)
+
+    print('-- initiate session')
+    session = get_session()
+    print('-- load model')
+    vgg16 = imp.load_source('vgg16', path_to_model + 'vgg16.py')
+    print('-- define input structure')
+    imgs = tf.placeholder(tf.float32, [None, 224, 224, 3])
+    print('-- load model weights')
+    vgg = vgg16.vgg16(imgs, path_to_model + 'vgg16_weights.npz', session)
+
+    return vgg, session
+
+def extract_stimuli(path_to_stimuli): 
     
-    path_to_stimuli = 'stimuli/'
     all_directories = np.sort(os.listdir(path_to_stimuli))
 
     stimuli = {} 
@@ -93,7 +105,6 @@ def generate_trial(i_group, noise_magnitude=0, visualize=1, input_type='human'):
     # return the indices of these trial stims
     return [int(i) for i in trial_stims]
 
-
 def model_responses_to_stimuli(vgg, stimuli, i_exp):  
     
     print('extracting model responses for stimulus set:', i_exp)
@@ -108,31 +119,23 @@ def model_responses_to_stimuli(vgg, stimuli, i_exp):
                 }
     
     labels, activations, errors, removed_pairs = [], [], [], [] 
-
     model_responses = {l:[] for l in list(layer_map)} ; 
     model_responses['pixel'] = [] 
-
+    
     for i_image in range(len(stimuli[i_exp])):
-
+    
         # format images
         image_i = np.expand_dims(np.repeat(stimuli[i_exp][i_image][ :, : , np.newaxis], 3, axis=2), axis=0)
-
+        
         # extract model representations 
         i_responses = sess['sess'].run([[layer_map[i] for i in layer_map]], feed_dict={vgg.imgs: image_i})[0]
-
+        
         for i in range(len(list(layer_map))): 
-
+            
             model_responses['pixel'].append( stimuli[i_exp][i_image].flatten() ) 
             model_responses[list(layer_map)[i]].append(i_responses[i].flatten() ) 
-
+            
     return model_responses
-
-def load_model(): 
-    path_to_model = '/Users/biota/work/perirhinal_cortex/analysis/models/'
-    vgg16 = imp.load_source('vgg16', path_to_model + 'vgg16.py')
-    imgs = tf.placeholder(tf.float32, [None, 224, 224, 3])
-    vgg = vgg16.vgg16(imgs, path_to_model + 'vgg16_weights.npz', sess['sess'])
-    return vgg
 
 def run_single_experiment(model_data, i_category, n_subjects, n_trials):
     
@@ -147,11 +150,11 @@ def run_single_experiment(model_data, i_category, n_subjects, n_trials):
     for i_subject in range(n_subjects):  
         
         for i_iteration in range(n_trials): 
-
+            
             trial_stims = generate_trial(i_category, visualize=0)
             
             for i_layer in layers: 
-
+                
                 responses = [model_data[i_layer][i] for i in trial_stims]
                 trial_covariance = np.corrcoef(responses)
                 trial_decision_space = np.array([trial_covariance[i, x[x!=i]] for i in x])
@@ -166,28 +169,29 @@ def run_single_experiment(model_data, i_category, n_subjects, n_trials):
 
 
 if __name__ == '__main__': 
-   
+    
+    base_directory = os.path.abspath('..') 
+    # experiment is probablistic 
+    np.random.seed(0) 
+    # set path to experimental stimuli
+    path_to_stimuli = os.path.join(base_directory, 'experiments/stark_2000/stimuli'))
     # extract all stimuli 
-    stimuli, meta, n_viewpoints, n_categories = extract_stimuli()
-
-    print('session')
-    sess = get_session()
-
-    print('loading model...')
-    vgg = load_model() 
-
+    stimuli, meta, n_viewpoints, n_categories = extract_stimuli(path_to_stimuli)
+    # path 
+    path_to_model = os.path.join(base_directory, 'model'))
+    # load model 
+    vgg, sess = define_model(path_to_model)
+    # set experimental parameters 
     n_trials = 100
     n_subjects = 3 
-    np.random.seed(0) 
-
+    # perform experiment in sequence
     experiments = {} 
     for i_experiment in [s for s in stimuli if s != '3DGREYSC']: 
-	
 	# extract model responses for each stimulus set
         model_data = model_responses_to_stimuli(vgg, stimuli, i_experiment)
 	# determine model performance on stimulus set
         experiments[i_experiment] = run_single_experiment(model_data, i_experiment, n_subjects, n_trials)
 
     # store results
-    with open('stark_2000_modelperformance.pickle', 'wb') as handle: 
+    with open('model_performance.pickle', 'wb') as handle: 
         pickle.dump(experiments, handle)

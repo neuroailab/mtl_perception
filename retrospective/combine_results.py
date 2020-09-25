@@ -2,7 +2,7 @@ import colour, os, pandas, pickle, numpy as np
 import statsmodels.formula.api as smf
 import warnings ; warnings.filterwarnings('ignore')
 
-def stark(base_directory): 
+def stark(base_directory):
 
     # patient data
     stark_human = os.path.join(base_directory, 'experiments/stark_2000/collapse_runs_1.xlsx')
@@ -22,7 +22,7 @@ def stark(base_directory):
 
     # model data
     stark_model_data = os.path.join(base_directory, 'stark_2000/model_performance.pickle')
-    
+
     name_map = {'FACES':'faces',
                 '3DGREYSC_snow_1':'snow3',
                 '3DGREYSC_snow_2': 'snow4',
@@ -37,11 +37,11 @@ def stark(base_directory):
         indices = np.sum(stark_[['experiment']] == name_map[exp], axis=1).values
         for i in _data[exp]:
             stark_[i].iloc[np.nonzero(indices)[0][0]] = _data[exp][i]
-            
+
     return stark_
 
 
-def barense(base_directory): 
+def barense(base_directory):
 
     ############### BARENSE
 
@@ -65,16 +65,16 @@ def barense(base_directory):
     _bdata = pandas.read_csv(os.path.join(base_directory, 'barense_2007/model_performance.csv'))
 
     for i in _bdata.layer.unique(): barense_[i] = ''
-
-    for exp in _bdata.experiment.unique() :
+    #print( _bdata.experiment.unique() )
+    for exp in [i for i in _bdata.experiment.unique() if 'oddity' not in i] :
         indices = np.sum(barense_[['experiment']] == exp, axis=1).values
         for i in _bdata.layer.unique():
             i_value =_bdata[(_bdata.experiment==exp) * (_bdata.layer==i) ].accuracy.values[0]
             barense_[i].iloc[np.nonzero(indices)[0][0]] = i_value
-            
+
     return barense_
 
-def lee06(base_directory): 
+def lee06(base_directory):
 
     # patient data
     lee_human_data_location = os.path.join(base_directory, 'experiments/lee_2006/Lee_2006_JNeurosci.xlsx')
@@ -107,14 +107,14 @@ def lee06(base_directory):
         indices = np.sum(lee2006[['experiment']] == name_map[exp], axis=1).values
         for i in _data[exp]:
             lee2006[i].iloc[np.nonzero(indices)[0][0]] = _data[exp][i]
-    
+
     return lee2006
 
-def lee05(base_directory): 
+def lee05(base_directory):
 
 
-    #################################### patient data #################################### 
-    
+    #################################### patient data ####################################
+
     ## experiment 1
     lee05_human_data_location = os.path.join(base_directory, 'experiments/lee_2005/Lee_2005_Hippocampus_Expt1.xlsx')
     E1 = pandas.read_excel(lee05_human_data_location,  header=0)
@@ -166,9 +166,9 @@ def lee05(base_directory):
     lee_['claim'].append( 'for')
     lee_['type'].append( 'diagnostic' )
     lee2005 = pandas.DataFrame( lee_ )
-    
-    #################################### model data #################################### 
-    
+
+    #################################### model data ####################################
+
     with open(os.path.join(base_directory, 'lee_2005/model_performance.pickle'), 'rb') as handle:
         two_experiments = pickle.load(handle)
 
@@ -189,18 +189,18 @@ def lee05(base_directory):
             indices = np.sum(lee2005[['experiment']] == name_map[exp], axis=1).values
 
             for i in _data[exp]:
-                lee2005[i].iloc[np.nonzero(indices)[0][0]] = _data[exp][i]     
-    
+                lee2005[i].iloc[np.nonzero(indices)[0][0]] = _data[exp][i]
+
     columns = lee2005.columns.tolist()
     # reorder columns if necessary so pixels come before all layers, not after
-    if np.nonzero( np.array(columns) == 'pixel')[0] == len(columns)-1: 
+    if np.nonzero( np.array(columns) == 'pixel')[0] == len(columns)-1:
         columns.insert(8, columns.pop() )
         lee2005 = lee2005[columns]
 
     return lee2005
 
-def summary_statistics( meta_df, it_layer, v4_layer): 
-    
+def summary_statistics( meta_df, it_layer, v4_layer):
+
     meta_df['prc_delta'] = meta_df['prc_intact']-meta_df['prc_lesion']
     meta_df['hpc_delta'] = meta_df['hpc_intact']-meta_df['hpc_lesion']
     meta_df['prclesion_model_delta'] = meta_df['prc_lesion']-meta_df[it_layer]
@@ -241,7 +241,7 @@ def summary_statistics( meta_df, it_layer, v4_layer):
 
         prc_interaction = smf.ols("human ~ model * group", prc_data).fit()
         interactions['prc_con'].append( prc_interaction.pvalues[-1] )
-        
+
         # stats
         hpc_data = pandas.DataFrame(
             {'model': np.concatenate((model_responses, model_responses)),
@@ -272,54 +272,84 @@ def summary_statistics( meta_df, it_layer, v4_layer):
                                      'hpc_delta_rmse': hpc_intact_rmse-hpc_lesion_rmse,
                                      'layer': layers})
 
-    for group in ['prc', 'hpc']: 
+    for group in ['prc', 'hpc']:
         color_range = {'prc':['#4B0082', '#FF1493'], 'hpc':['#5d13e7', '#1ee3cf']}[group]
         colors = [i.rgb for i in colour.Color(color_range[0]).range_to(colour.Color(color_range[1]), len(layer_data))]
         layer_data['%s_colors'%group] = colors
-    
+
     return meta_df, layer_data
 
-def non_diagnostic_stimuli():
 
-    intact = {}
-    lesion = {}
-    contro = {}
+def misclassified_experiments(directory): 
 
-    intact['barense'] = [.98, .85, .88]
-    lesion['barense'] = [1., .26, .38]
-    contro['barense'] = [1., .87, .89]
-    intact['inhoff'] = [.71, .65, .53]
-    lesion['inhoff'] = [.47, .45, .27]
-    contro['inhoff'] = [.65, .67, .55]
-    intact['knutson'] = [1.  , 1.  , 0.94, 1.  , 0.75, 0.71, 0.75, 0.25]
-    lesion['knutson'] = [0.99, 0.96, 0.95, 0.84, 0.83, 0.79, 0.79, 0.54]
-    contro['knutson'] = [0.98, 0.9 , 0.92, 0.72, 0.75, 0.29,  np.nan,  np.nan]
-    intact['buffalo'] = [.67]
-    lesion['buffalo']  = [.7]
-    contro['buffalo'] = [.68]
+    model = {} 
 
-    i = []
-    l = []
-    c = []
-    for study in intact:
-        i.extend(intact[study])
-        l.extend(lesion[study])
-        c.extend(contro[study])
-    i = np.array(i)
-    l = np.array(l)
-    c = np.array(c)
+    barense_label = 'Barense et al. 2007'
+    buffalo_label = 'Buffalo et al. 1998'
+    knutson_label = 'Knutson et al. 2011'
+    imhoff_label  = 'Imhoff et al. 2018'
 
-    dictionary = {'intact': intact,
-                  'lesion': lesion,
-                  'control': contro}
+    with open(os.path.join(directory, 'buffalo_1998/model_performance.pickle'), 'rb') as f: 
+        model[buffalo_label] = pickle.load(f)['zero_delay']
 
-    vector = {'intact': i, 'lesion': l, 'control': c}
+    with open(os.path.join(directory, 'knutson_2011/model_performance.pickle'), 'rb') as f: 
+        _knutson = pickle.load(f)
+        model[knutson_label] = np.mean([_knutson[i] for i in _knutson])
+
+    barense_location = os.path.join(directory, 'barense_2007/nondiagnostic_model_performance.csv')
+    model[barense_label] = pandas.read_csv(barense_location).groupby('experiment').mean()['accuracy'].values[0]
+    
+    imhoff_location = os.path.join(directory, 'imhoff_2018/model_performance.csv')
+    model[imhoff_label] = pandas.read_csv(imhoff_location)['accuracy'].mean() 
+
+    claims, exprmt, intact, lesion, contro = {}, {}, {}, {}, {} 
+    
+    support_claim = 'Claim: "Yes"'
+    refute_claim  = 'Claim: "No"'
+    # barense human behavior
+    intact[barense_label] = [.98, .85, .88]
+    lesion[barense_label] = [1., .26, .38]
+    contro[barense_label] = [1., .87, .89]
+    exprmt[barense_label] = ['Fribbels Low Ambiguity', 'Fribbles Medium Ambiguity', 'Fribbles High Ambiguity']
+    claims[barense_label] = support_claim
+    # imhoff human behavior
+    intact[imhoff_label] = [.71, .65, .53]
+    lesion[imhoff_label] = [.47, .45, .27]
+    contro[imhoff_label] = [.65, .67, .55]
+    exprmt[imhoff_label] = ['Oddity Low Difficulty', 'Oddity Medium Difficulty', 'Oddity High Difficulty']
+    claims[imhoff_label] = support_claim
+    # knutson human behavior
+    intact[knutson_label] = [1.  , 1.  , 0.94, 1.  , 0.75, 0.71, 0.75, 0.25]
+    lesion[knutson_label] = [0.99, 0.96, 0.95, 0.84, 0.83, 0.79, 0.79, 0.54]
+    contro[knutson_label] = [0.98, 0.9 , 0.92, 0.72, 0.75, 0.29,  np.nan,  np.nan]
+    exprmt[knutson_label] = ['Difficulty level %d'%(i+1) for i in range(len(contro[knutson_label]))]
+    claims[knutson_label] = refute_claim
+    # buffalo human behaviorts
+    intact[buffalo_label] = [.67]
+    lesion[buffalo_label] = [.7]
+    contro[buffalo_label] = [.68]
+    exprmt[buffalo_label] = ['Zero delay match-to-sample']
+    claims[buffalo_label] = refute_claim
+
+    i, l, c, m, s, e, t = [], [], [], [], [], [], [] 
+    for i_study in intact:
+        n = len(intact[i_study])
+        i.extend(intact[i_study])
+        l.extend(lesion[i_study])
+        c.extend(contro[i_study])
+        m.extend([int(model[i_study]) for i in range(n)])
+        s.extend([i_study for i in range(n)])
+        e.extend(exprmt[i_study])
+        t.extend([claims[i_study] for i in range(n)])
+    
+    df = pandas.DataFrame({'hpc_lesion':c,'prc_lesion':l,
+                           'control': i,'model_performance':m,
+                           'study':s,'experiment':e, 'PRC involved in perception?':t})
+    return df 
 
 
-    return { 'studies': dictionary, 'flat': vector }
+def integrate_across_studies( base , it_layer, v4_layer ):
 
-def integrate_across_studies( base , it_layer, v4_layer ): 
-   
     meta_df =  pandas.concat([stark(base), lee05(base), lee06(base), barense(base)], ignore_index=True)
 
     meta_df['prc_delta'] = meta_df['prc_intact']-meta_df['prc_lesion']
@@ -334,11 +364,10 @@ def integrate_across_studies( base , it_layer, v4_layer ):
                'conv5_1', 'conv5_2', 'conv5_3', 'pool5', 'fc6', 'fc7', 'fc8']
 
 
-    for i_layer in layers: 
+    for i_layer in layers:
         meta_df[i_layer] = meta_df[i_layer].astype(float)
-    
-    return meta_df 
 
+    return meta_df
 
 if __name__ == '__main__': 
     
@@ -346,5 +375,5 @@ if __name__ == '__main__':
     it_layer = 'conv5_1'
     v4_layer='pool3'
     retrospective = integrate_across_studies( base_directory, it_layer, v4_layer )  
-    retrospective_summary = compute_summary_statistics( retrospective, it_layer, v4_layer) 
+    retrospective_summary = summary_statistics( retrospective, it_layer, v4_layer) 
     non_diagnostic = non_diagnostic_stimuli() 

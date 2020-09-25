@@ -28,7 +28,7 @@ def show_model_parameters(m_, idx_ =-1):
 
     return md(report), report
 
-def meta_analytic_results(i_layer, meta_df, nondiagnostic):
+def meta_analytic_results(i_layer, meta_df, misclassified):
 
     # helper function
     def plot_nice_line(model_, params={}, title=''):
@@ -48,9 +48,9 @@ def meta_analytic_results(i_layer, meta_df, nondiagnostic):
     hpc_ = meta_df['hpc_lesion'].values
     con_prc = meta_df['prc_intact'].values
     con_hpc = meta_df['hpc_intact'].values
-    i = nondiagnostic['flat']['intact']
-    l = nondiagnostic['flat']['lesion']
-    c = nondiagnostic['flat']['control']
+    i = misclassified['hpc_lesion']#nondiagnostic['flat']['intact']
+    l = misclassified['prc_lesion']#nondiagnostic['flat']['lesion']
+    c = misclassified['control']#nondiagnostic['flat']['control']
 
     fig = plt.figure(constrained_layout=True, figsize=[7.5, 4])
     gs = fig.add_gridspec(2, 4)
@@ -96,8 +96,8 @@ def meta_analytic_results(i_layer, meta_df, nondiagnostic):
     plt.xticks(size=t_size); plt.yticks(size=t_size)
     ax.text(-0.05, 1.06, ['a','b','c', 'd'][0], transform=ax.transAxes,fontsize=12, va='top', ha='right')
 
-    plt.scatter(np.repeat(1., len(i)), i, facecolor='white', edgecolor=con_c, s=p_size-10,linewidth=nd_lwidth)
-    plt.scatter(np.repeat(1., len(l)), l, facecolor='white', edgecolor=prc_c,s=p_size-10,linewidth=nd_lwidth)
+    plt.scatter(misclassified['model_performance'], i, facecolor='white', edgecolor=con_c, s=p_size-10,linewidth=nd_lwidth)
+    plt.scatter(misclassified['model_performance'], l, facecolor='white', edgecolor=prc_c,s=p_size-10,linewidth=nd_lwidth)
 
     plt.legend(fontsize=10, title_fontsize=8, framealpha=0, loc=4)
 
@@ -126,8 +126,8 @@ def meta_analytic_results(i_layer, meta_df, nondiagnostic):
     plt.xticks(size=t_size); plt.yticks(size=t_size)
     ax.text(-0.05, 1.06, ['a','b','c', 'd'][1], transform=ax.transAxes,fontsize=12, va='top', ha='right')
 
-    plt.scatter(np.repeat(1., len(i)), i, facecolor='white', edgecolor=con_c, s=p_size-10, linewidth=nd_lwidth)
-    plt.scatter(np.repeat(1., len(c)), c, facecolor='white', edgecolor=hpc_c,s=p_size-10, linewidth=nd_lwidth)
+    plt.scatter(misclassified['model_performance'], i, facecolor='white', edgecolor=con_c, s=p_size-10, linewidth=nd_lwidth)
+    plt.scatter(misclassified['model_performance'], c, facecolor='white', edgecolor=hpc_c,s=p_size-10, linewidth=nd_lwidth)
 
     #filename = 'prc_mtl_intact_compact_%s.pdf'%i_layer
     #save_name = os.path.join(_location, filename)

@@ -1,9 +1,9 @@
+import warnings; warnings.simplefilter('ignore')
 import os, pickle, imp, pandas, sys
 import numpy as np
 from scipy.misc import imread, imresize
 from sklearn import cluster
 from PIL import Image
-import warnings; warnings.simplefilter('ignore')
 
 def extract_stimuli(stimulus_directory): 
     
@@ -40,11 +40,11 @@ def define_model(path_to_model):
     print('-- initiate session')
     session = get_session()
     print('-- load model')
-    vgg16 = imp.load_source('vgg16', path_to_model + 'vgg16.py')
+    vgg16 = imp.load_source('vgg16', os.path.join(path_to_model, 'vgg16.py'))
     print('-- define input structure')
     imgs = tf.placeholder(tf.float32, [None, 224, 224, 3])
     print('-- load model weights')
-    vgg = vgg16.vgg16(imgs, path_to_model + 'vgg16_weights.npz', session)
+    vgg = vgg16.vgg16(imgs, os.path.join(path_to_model, 'vgg16_weights.npz'), session)
     
     return vgg, session
 
@@ -81,7 +81,6 @@ def evaluate_experiment_one(model_responses, stimuli, i_experiment):
     model_layers = list(model_responses[list(model_responses)[0]])
     layer_responses = {l:[] for l in model_layers}
 
-    print( '\n', i_experiment ) 
     if 'Face' in i_experiment: 
         i_len = 6 
     else: 
@@ -121,14 +120,19 @@ def model_performance_experiment_one(model, session, stimulus_directory):
 
 def model_experiment_two(features, answer, n_iterations): 
     
+    # pseudo subjects
     experimental_n = 3
+    # determine all layers 
     layers = list( features[ list(features)[0] ])
+    # initialize data type
     performance = {l:[] for l in layers}
-    
+    # iterate over pseudo experiments
     for i_iteration in range(n_iterations): 
-
+        
+        # true experiment is not known, only protocol used to generate it
         pseudo_experiment = np.random.permutation(list(features))[0:experimental_n]
-
+        
+        # estimate performance across all layers
         for l in layers: 
             pseudo_performance = [evaluate_trial(features[t][l], answer[t]) for t in pseudo_experiment]
             performance[l].append( np.mean(pseudo_performance) )
@@ -156,11 +160,13 @@ def experiment_two_model_performance(model, session, stimulus_directory):
     return performance
 
 if __name__ == '__main__': 
-    
+     
+    # set seed to fix outcome of probablistic protocol
+    np.random.seed(0) 
     # set base directory all analyses are contained within
     base_directory = os.path.abspath('..')
     # set path to model
-    path_to_model = os.path.join(base_directory, 'models')    
+    path_to_model = os.path.join(base_directory, 'model')    
     # define model 
     model, session = define_model(path_to_model)
     # path to stimulus directory

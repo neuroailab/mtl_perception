@@ -284,7 +284,7 @@ def misclassified_experiments(directory):
 
     model = {} 
 
-    barense_label = 'Barense et al. 2007'
+    barense_label = 'Barense et al. 2007t'
     buffalo_label = 'Buffalo et al. 1998'
     knutson_label = 'Knutson et al. 2011'
     imhoff_label  = 'Imhoff et al. 2018'
@@ -371,9 +371,13 @@ def integrate_across_studies( base , it_layer, v4_layer ):
 
 if __name__ == '__main__': 
     
+    # location of all retrospective folders containing model performance outputs
     base_directory = '/Users/biota/work/mtl_perception/retrospective/'
-    it_layer = 'conv5_1'
-    v4_layer='pool3'
+    # set it-like and v4-like layers to compute summary statistics over
+    it_layer, v4_layer = 'conv5_1', 'pool3'
+    # collect results across all studies and create a common format 
     retrospective = integrate_across_studies( base_directory, it_layer, v4_layer )  
+    # compute summary statistics
     retrospective_summary = summary_statistics( retrospective, it_layer, v4_layer) 
-    non_diagnostic = non_diagnostic_stimuli() 
+    # extract data for misclassified experiments
+    misclassified  = misclassified_experiments(base_directory) 

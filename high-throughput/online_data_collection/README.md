@@ -1,31 +1,27 @@
-# task directory
+### Server- and client-side code to perform online data collection
 
-### `app.js`
+For a detailed tutorial on implementing this browswer-based experiment, see `https://github.com/tzler/server_side_psych`. In short, after setting up a server for online data collection, set up this folder with: 
 
-- node script for server side processes
+- Create a `credentials/` folder in this directory which contains mongo, ssl, and mturk info 
 
-### `credentials/`  
+- Create a `jsPsych/` folder by cloning the jsPsych repository with `$ git clone https://github.com/jspsych/jsPsych.git`
 
-- folder containing mongo, ssl, and mturk key info 
+- Create a `node_modules/` folder that contains server-side dependencies using npm: 
 
-### `jsPsych/`  
+  ```  
+  $ npm init --yes # initialize and accept all defaults
+  ```
+  
+  and install the dependencies we'll need
+  
+  ```
+  $ npm install express mongodb https socket.io 
+  ```
+- Create a `stimuli/` folder with all experimental stimuli (available upon request) 
 
-- cloned jsPsych repository 
+
+With those steps complete, to open a port that makes your server available for data collection, you can run 
 
 ```
-$ git clone https://github.com/jspsych/jsPsych.git
+$ node app.js
 ```
-
-### `node_modules`  
-
-- server side dependencies installed with npm: 
-
-```  
-$ npm init --yes # initialize and accept all defaults
-$ npm install express mongodb https socket.io 
-```
-
-### `stimuli`
-
-- base directory to share stimuli across folders
-

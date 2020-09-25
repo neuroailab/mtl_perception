@@ -76,7 +76,10 @@ def layer_fits(pls_vvs_dir, measure, split_half):
             'it_uncorrected':{'mu':it_fit, 'std':it_std},
             'v4_uncorrected':{'mu':v4_fit, 'std':v4_std},
             'delta':delta,
-            'layers': order}
+            'layers': order, 
+            'it_splithalf_r': split_half['IT_NEURONS'],
+            'v4_splithalf_r': split_half['V4_NEURONS'],
+            }
 
     return data
 
@@ -89,7 +92,7 @@ if __name__ == '__main__':
     vvs_data_path = os.path.join(electrophysiological_dir, 'ventral_neural_data.hdf5')
 
     # define n iterations for split half reliability analysis 
-    n_iterations = 10
+    n_iterations = 100
     neural_split_half = split_half_correlation(vvs_data_path, n_iterations, np.mean)
     
     # set path to results from pls fitting procedure 
@@ -97,5 +100,7 @@ if __name__ == '__main__':
     
     # extract results from pls fitting procedures and adjust by noise ceiling in neural data
     pls_fits = layer_fits(pls_vvs_dir, np.median, neural_split_half)
-
-    print( pls_fits )
+    
+    # save reliability analyses and pls fitting results
+    with open('reliability_and_fitting_results.pickle', 'wb') as f: 
+        pickle.dump(pls_fits, f)

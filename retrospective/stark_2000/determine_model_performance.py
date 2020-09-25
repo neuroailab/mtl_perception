@@ -24,11 +24,11 @@ def define_model(path_to_model):
     print('-- initiate session')
     session = get_session()
     print('-- load model')
-    vgg16 = imp.load_source('vgg16', path_to_model + 'vgg16.py')
+    vgg16 = imp.load_source('vgg16', os.path.join(path_to_model,'vgg16.py'))
     print('-- define input structure')
     imgs = tf.placeholder(tf.float32, [None, 224, 224, 3])
     print('-- load model weights')
-    vgg = vgg16.vgg16(imgs, path_to_model + 'vgg16_weights.npz', session)
+    vgg = vgg16.vgg16(imgs, os.path.join(path_to_model, 'vgg16_weights.npz'), session)
 
     return vgg, session
 
@@ -105,7 +105,7 @@ def generate_trial(i_group, noise_magnitude=0, visualize=1, input_type='human'):
     # return the indices of these trial stims
     return [int(i) for i in trial_stims]
 
-def model_responses_to_stimuli(vgg, stimuli, i_exp):  
+def model_responses_to_stimuli(vgg, sess, stimuli, i_exp):  
     
     print('extracting model responses for stimulus set:', i_exp)
     layer_map = {'conv1_1': vgg.conv1_1, 'conv1_2':vgg.conv1_2, 'pool1': vgg.pool1, 
@@ -128,7 +128,7 @@ def model_responses_to_stimuli(vgg, stimuli, i_exp):
         image_i = np.expand_dims(np.repeat(stimuli[i_exp][i_image][ :, : , np.newaxis], 3, axis=2), axis=0)
         
         # extract model representations 
-        i_responses = sess['sess'].run([[layer_map[i] for i in layer_map]], feed_dict={vgg.imgs: image_i})[0]
+        i_responses = sess.run([[layer_map[i] for i in layer_map]], feed_dict={vgg.imgs: image_i})[0]
         
         for i in range(len(list(layer_map))): 
             
@@ -170,25 +170,26 @@ def run_single_experiment(model_data, i_category, n_subjects, n_trials):
 
 if __name__ == '__main__': 
     
-    base_directory = os.path.abspath('..') 
-    # experiment is probablistic 
+    # experiment is probablistic -- generating noised stimuli & distribution of trials 
     np.random.seed(0) 
+    # location for all stimuli and model folders 
+    base_directory = os.path.abspath('..') 
     # set path to experimental stimuli
-    path_to_stimuli = os.path.join(base_directory, 'experiments/stark_2000/stimuli'))
+    path_to_stimuli = os.path.join(base_directory, 'experiments/stark_2000/stimuli')
     # extract all stimuli 
     stimuli, meta, n_viewpoints, n_categories = extract_stimuli(path_to_stimuli)
     # path 
-    path_to_model = os.path.join(base_directory, 'model'))
+    path_to_model = os.path.join(base_directory, 'model')
     # load model 
     vgg, sess = define_model(path_to_model)
     # set experimental parameters 
     n_trials = 100
-    n_subjects = 3 
+    n_subjects = 3
     # perform experiment in sequence
     experiments = {} 
     for i_experiment in [s for s in stimuli if s != '3DGREYSC']: 
 	# extract model responses for each stimulus set
-        model_data = model_responses_to_stimuli(vgg, stimuli, i_experiment)
+        model_data = model_responses_to_stimuli(vgg, sess, stimuli, i_experiment)
 	# determine model performance on stimulus set
         experiments[i_experiment] = run_single_experiment(model_data, i_experiment, n_subjects, n_trials)
 

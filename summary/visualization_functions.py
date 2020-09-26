@@ -8,7 +8,6 @@ from IPython.display import Markdown as md
 from scipy import stats
 import warnings ; warnings.filterwarnings('ignore')
 
-
 def show_model_parameters(m_, idx_ =-1):
 
     def sigfigs(x):
@@ -28,7 +27,7 @@ def show_model_parameters(m_, idx_ =-1):
 
     return md(report), report
 
-def meta_analytic_results(i_layer, meta_df, misclassified):
+def retrospective_interaction(i_layer, meta_df, misclassified, _location):
 
     # helper function
     def plot_nice_line(model_, params={}, title=''):
@@ -129,9 +128,9 @@ def meta_analytic_results(i_layer, meta_df, misclassified):
     plt.scatter(misclassified['model_performance'], i, facecolor='white', edgecolor=con_c, s=p_size-10, linewidth=nd_lwidth)
     plt.scatter(misclassified['model_performance'], c, facecolor='white', edgecolor=hpc_c,s=p_size-10, linewidth=nd_lwidth)
 
-    #filename = 'prc_mtl_intact_compact_%s.pdf'%i_layer
-    #save_name = os.path.join(_location, filename)
-    #plt.savefig(save_name, format='pdf', bbox_inches = "tight")
+    filename = 'figure_two.pdf'
+    save_name = os.path.join(_location, filename)
+    plt.savefig(save_name, format='pdf', bbox_inches = "tight")
 
 def annotate_fit_to_layer(region, pls_fits):
     _xy = pls_fits[region]['mu']
@@ -263,7 +262,7 @@ def nice_legends(meta_statistics, pls_fits):
                      bbox={'alpha':1, 'color':'white'})
         plt.plot([__x, __x], [__y, y_offset], linewidth=.5, alpha=.3, linestyle=":", zorder=-3, color='black')
 
-def focal_neuroanatomical_dependencies(pls_fits, retrospective, meta_statistics):
+def focal_neuroanatomical_dependencies(pls_fits, retrospective, meta_statistics, _location):
 
     fig = plt.figure(constrained_layout=True, figsize=[13.5, 4])
     gs = fig.add_gridspec(2, 8)
@@ -343,10 +342,10 @@ def focal_neuroanatomical_dependencies(pls_fits, retrospective, meta_statistics)
 
     gradient_show()
     nice_legends(_meta, pls_fits)
-    #save_location = os.path.join(_location, 'focal_vvs_dependence.pdf')
-    #plt.savefig(save_location, format='pdf', bbox_inches = "tight")
+    save_location = os.path.join(_location, 'figure_three.pdf')
+    plt.savefig(save_location, format='pdf', bbox_inches = "tight")
 
-def high_throughput_results(novel_summary):
+def high_throughput_results(novel_summary, _location):
 
     def plot_nice_line(model_, params={}, title=''):
         m, b = model_.coef_[0], model_.intercept_[0]
@@ -409,10 +408,10 @@ def high_throughput_results(novel_summary):
     plt.subplots_adjust(right=1.2)
     ax.text(-0.11, 1.08, 'e', transform=ax.transAxes,fontsize=16, va='top', ha='right')
 
-    # save_location = os.path.join(_location, 'novel_diagnostic_experiment.pdf')
-    # plt.savefig(save_location, format='pdf', bbox_inches = "tight")
+    save_location = os.path.join(_location, 'figure_five.pdf')
+    plt.savefig(save_location, format='pdf', bbox_inches = "tight")
 
-def show_resnets(df):
+def show_resnets(df, resnets, _location):
 
     def plot_nice_line(model_, params={}, title=''):
         m, b = model_.coef_[0], model_.intercept_[0]
@@ -427,7 +426,7 @@ def show_resnets(df):
     _a = 1
     _cap = ['butt', 'round', 'projecting'][0]
     _jstyle = ['miter', 'round', 'bevel'][2]
-    resnets = [i for i in df.columns if 'resnet' in i]
+    #resnets = [i for i in df.columns if 'resnet' in i]
     prc_c = [i.rgb for i in colour.Color(prc_color[0]).range_to(colour.Color(prc_color[1]), len(resnets))]
     hpc_c = [i.rgb for i in colour.Color(hpc_color[0]).range_to(colour.Color(hpc_color[1]), len(resnets))]
     con_c = [i.rgb for i in colour.Color(con_color[0]).range_to(colour.Color(con_color[1]), len(resnets))]
@@ -451,7 +450,7 @@ def show_resnets(df):
         plot_nice_line(hpc_model_, params)
 
         prc_model_ = LinearRegression().fit(np.reshape(mod_, (-1,1)), np.reshape(prc_, (-1, 1)))
-        params = {'color':prc_c[i_resnet], 'linewidth':lw, 'zorder':-5, 'label':'%3d'%int(resnets[i_resnet][7:]),
+        params = {'color':prc_c[i_resnet], 'linewidth':lw, 'zorder':-5, 'label':'%3d'%int(resnets[i_resnet]), 
                  'solid_capstyle':_cap, 'alpha':_a}
         plot_nice_line(prc_model_, params)
 
@@ -476,8 +475,7 @@ def show_resnets(df):
     plt.ylabel('Human Performance', fontsize=12)
     plt.xticks(size=8)
     plt.yticks(size=8)
-    # plt.savefig(os.path.join(_location, 'multiple_resnets.pdf'),
-    #             format='pdf', bbox_inches = "tight")
+    plt.savefig(os.path.join(_location, 'figure_six.pdf'), format='pdf', bbox_inches = "tight")
 
 def face_retrospective_models(meta_df, PARAMS):
     np.random.seed(1234)
@@ -682,7 +680,7 @@ def face_novel_human(novel, i_data, y_data, PARAMS, view_type='foveated', legend
         plt.legend([a], ['Model Prediction'], loc=4,  fontsize=PARAMS['legend_fontsize'],
                    title_fontsize=PARAMS['legend_title_fontsize']+1, labelspacing=.2, framealpha=0)
 
-def changing_distribution_of_training_data(retrospective, mm_select, novel): 
+def changing_distribution_of_training_data(retrospective, mm_select, novel, _location): 
     
     face_color = '#c53a73'
     PARAMS = {'FACECOLOR':face_color, 'edgecolor':'white', 'pointlinewidth':.25, 'legend_title_fontsize':6, 
@@ -733,11 +731,11 @@ def changing_distribution_of_training_data(retrospective, mm_select, novel):
     ax = fig.add_subplot(gs[3:4, 3:4]); 
     face_novel_human(novel, 'vggface', 'rt', PARAMS)
     
-    #plt.text(label_dist, label_height, 'j', fontsize=label_size, transform=ax.transAxes,)
-    #plt.savefig(os.path.join(_location, 'training_effects_square.pdf'), format='pdf', bbox_inches = "tight")
+    plt.text(label_dist, label_height, 'j', fontsize=label_size, transform=ax.transAxes,)
+    plt.savefig(os.path.join(_location, 'figure_seven.pdf'), format='pdf', bbox_inches = "tight")
 
-def unfoveated_model_behavior(retrospective, mm_select, novel):
-    #face_novel_human('imagenet', 'human', PARAMS, view_type='original', legend=1)
+def unfoveated_model_behavior(retrospective, mm_select, novel, _location):
+    
     face_color = '#c53a73'
     PARAMS = {'FACECOLOR':face_color, 'edgecolor':'white', 'pointlinewidth':.25, 'legend_title_fontsize':6,
               'legend_fontsize':6, 's':15, 'xtick_size':6, 'ylabel_fontsize':7, 'xlabel_fontsize':7, 'labelpad':2}
@@ -769,6 +767,4 @@ def unfoveated_model_behavior(retrospective, mm_select, novel):
     face_novel_human(novel, 'imagenet', 'rt', PARAMS, view_type='original')
     ax = fig.add_subplot(gs[1:2, 3:4]);
     face_novel_human(novel, 'vggface', 'rt', PARAMS, view_type='original')
-    #plt.savefig(os.path.join(_location, 'training_effects_unfoveated.pdf'), format='pdf', bbox_inches = "tight")
-
-
+    plt.savefig(os.path.join(_location, 'supplemental_figure_four.pdf'), format='pdf', bbox_inches = "tight")

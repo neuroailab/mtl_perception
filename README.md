@@ -1,8 +1,8 @@
-## When the ventral visual stream is not enough: A deep learning account of medial temporal lobe involvement in perception
+## A deep learning account of medial temporal lobe involvement in perception
 
 Our recent [findings](summary/manuscript/preprint.pdf) are reflected in the structure of this repository: 
 
-- `electrophysiological/`: fit computational proxy for the VVS to electrophysiological recordings from IT and V4 cortex 
+- `electrophysiological/`: model fits to electrophysiological recordings from IT and V4 cortex 
 - `retrospective/`: generate model performance on all experiments in the  retrospective dataset
 - `high-throughput/`: collect human behavior on novel dataset and preprocess the results 
 - `in_silico/`: examine effects of changing model architecture and trained data on PRC-relevant behavior 

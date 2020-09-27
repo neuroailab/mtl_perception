@@ -1,4 +1,4 @@
-# Modeling results in this directory: 
+# In silico Experiments
 
 - `architecture/retrospective.pickle`: model performance on retrospective dataset from multiple architectures
 - `training/retrospective/facetrained_retrospective.pickle`: face-trained model performance on retrospective dataset

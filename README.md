@@ -11,7 +11,7 @@ Results across each of these studies are synthesized in
 
 - `summary/`: reporting statistical effects, generating figures, and final manuscript 
 
-To generate our main findings and figures, install conda (v4.8.5, tested on an osx-64 platform) and import our python environment with
+To generate our main findings and figures, install conda (v4.8.5, tested on an osx-64 platform), import our python environment with
 
 ```
 $ conda env create -f conda_environment.yml

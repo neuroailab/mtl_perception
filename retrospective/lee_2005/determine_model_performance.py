@@ -6,31 +6,42 @@ from sklearn import cluster
 from PIL import Image
 
 def extract_stimuli(stimulus_directory): 
+    """returns experimental stimuli"""    
     
+    # initialize data structure
     stimuli = {} 
+    # identify task folders 
     task_folders = [i for i in os.listdir(stimulus_directory) if ('Faces' in i or 'objects' in i) * ('2' in i)]
-
+    
     for i_folder in  [i for i in task_folders]: 
-
+        
+        # extract stimulus type 
         i_type = i_folder[:-6]
+        # human readable name for stimulus category
         i_set = [1, 2]['2' in i_folder[-6:]]
+        # initialize data structure if absent 
         if i_type not in stimuli: stimuli[i_type] = {}
             
         for i_file in [i for i in os.listdir(os.path.join(stimulus_directory, i_folder)) if 'zip' not in i] : 
-            # load, reshape, and store 
+            # load image  
             i_image = Image.open(os.path.join(stimulus_directory, i_folder, i_file))
+            # reshape image
             i_image = imresize(i_image, (224, 224))
+            # reshape image 
             i_image = np.expand_dims( np.repeat(i_image[ :, : , np.newaxis], 3, axis=2), 0 ) 
+            # store image in workable format
             stimuli[i_type][i_file[:-4]] = np.array( i_image ) 
        
     return stimuli
 
 def define_model(path_to_model):
-    
+    """returns model and session"""
+    # use tf version one 
     import tensorflow.compat.v1 as tf
     tf.disable_v2_behavior()
     os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
-
+    
+    # define a new session
     def get_session():
         config = tf.ConfigProto(allow_soft_placement = True)
         config.gpu_options.per_process_gpu_memory_fraction = 0.4
@@ -49,7 +60,9 @@ def define_model(path_to_model):
     return vgg, session
 
 def extract_model_responses(vgg, session, stimuli, i_experiment): 
+    """returns model responses to experimental stimuli"""
     
+    # define model layers and their names
     layers = {'conv1_1': vgg.conv1_1, 'conv1_2':vgg.conv1_2, 'pool1': vgg.pool1,
               'conv2_1': vgg.conv2_1, 'conv2_2':vgg.conv2_2, 'pool2': vgg.pool2,
               'conv3_1': vgg.conv3_1, 'conv3_2':vgg.conv3_2, 'conv3_3':vgg.conv3_3, 'pool3': vgg.pool3,
@@ -57,48 +70,73 @@ def extract_model_responses(vgg, session, stimuli, i_experiment):
               'conv5_1': vgg.conv5_1, 'conv5_2':vgg.conv5_2, 'conv5_3':vgg.conv5_3, 'pool5': vgg.pool5,
               'fc6': vgg.fc1, 'fc7':vgg.fc2,  'fc8':vgg.fc3l}
 
+    # initialize data structure 
     model_responses = {} 
-    for image_name in list(stimuli[i_experiment]):
 
+    for image_name in list(stimuli[i_experiment]):
+        
+        # get trial imge 
         i_image = stimuli[i_experiment][image_name]
+        # extract model responses to image 
         features = session.run([[layers[i] for i in layers]], feed_dict={vgg.imgs: i_image})[0]
+        # restructure model responses into workable format 
         model_responses[image_name] = {list(layers)[i]: features[i].flatten() for i in range(len(layers))}
+        # incorporate pixel responses 
         model_responses[image_name]['pixel'] = np.array(i_image).flatten() 
         
     return model_responses
 
-def evaluate_trial(trial_responses, correct_index=0): 
+def evaluate_trial(trial_responses, correct_index=0):
+    """returns model accuracy on trial"""
+   
+    # convenience structure to extract off diagonal 
     x = np.array(list(range(len( trial_responses ))))  
+    # determine item-by-item trial covariance matrix 
     trial_covariance = np.corrcoef(trial_responses)
+    # extrac off diagonal 
     trial_decision_space = np.array([trial_covariance[i, x[x!=i]] for i in x])
+    # sort off diagonal 
     trial_decision_space.sort()
+    # determine model selected oddity
     i_choice = trial_decision_space[:,-1].argmin() 
-    correct = i_choice == (correct_index)
-    return correct 
+    # return model accuracy on trial 
+    return i_choice == (correct_index)
 
 def evaluate_experiment_one(model_responses, stimuli, i_experiment): 
+    """return model performance for trial one"""
     
+    # initialize data structures
     model_layers = list(model_responses[list(model_responses)[0]])
     layer_responses = {l:[] for l in model_layers}
-
+    
+    # determine number of objects per experiment
     if 'Face' in i_experiment: 
         i_len = 6 
     else: 
         i_len = 5 
-
+    
+    # set the number of trials to perform 
     n_trials = len(model_responses)//i_len
-
+    
     for i_object in range(1, n_trials + 1): 
-
+        
+        # determine which group we are modeling
         oddity_group = (i_object%n_trials) + 1
+        # determine stimuli for trial
         trial_stimuli = ['%d%d'%(i_object, i_view) for i_view in range(1, i_len+1)]
+        # determine viewpoint of oddity 
         oddity_viewpoint = np.random.randint(1, len(trial_stimuli))
+        # set oddity name 
         i_oddity = '%d%d'%(oddity_group, oddity_viewpoint+1)
+        # remove the oddity from all trials
         trial_stimuli.pop(oddity_viewpoint)
+        # inset oddity in front of list 
         trial_stimuli.insert(0, i_oddity)
-
+        
         for l in model_layers: 
+            # extract model responses for all trial stimuli defined above  
             trial_responses = np.array( [model_responses[i][l] for i in trial_stimuli] )
+            # determine and append accuracy of trial 
             layer_responses[l].append( evaluate_trial(trial_responses) )
         
     return {l: np.mean(layer_responses[l]) for l in model_layers}

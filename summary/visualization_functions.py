@@ -9,23 +9,29 @@ from scipy import stats
 import warnings ; warnings.filterwarnings('ignore')
 
 def show_model_parameters(m_, idx_ =-1):
-
+    
+    # fit model 
+    m_ = m_.fit() 
+    # extract significant figures from float 
     def sigfigs(x):
         d = int(str('%.2e'%x)[('%.2e'%x).find('-')+1:])
         n = np.round(float(str('%.02e'%x)[0:3]))
         return n, d
-
+    
+    # extract model parameters 
     beta, pval, df_model = m_.params[idx_], m_.pvalues[idx_], m_.df_model
     rsqrd, df_resid, tvalues = m_.rsquared, m_.df_resid, m_.tvalues[idx_]
-
+    
+    # show exact p values up to three significant figures 
     if sigfigs(pval)[1] < 4:
         stat_str = "$\\beta = %.2f$, $F(%d, %d)$ = $%.02f, P = %.03f $"
         report = stat_str%(beta, df_model, df_resid, tvalues, pval, )
     else:
         stat_str = "$\\beta = %.2f$, $F(%d, %d)$ = $%.02f, P = %.0f $ x $ 10 ^{-%d} $"
         report = stat_str%(beta, df_model, df_resid, tvalues, sigfigs(pval)[0], sigfigs(pval)[1])
-
-    return md(report), report
+    
+    # return markdown visualization 
+    return md(report) #, report
 
 def retrospective_interaction(i_layer, meta_df, misclassified, _location):
 

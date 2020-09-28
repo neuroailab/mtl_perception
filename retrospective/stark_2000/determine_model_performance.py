@@ -7,10 +7,12 @@ import os, sys, imp, itertools, pickle
 import matplotlib.pyplot as plt
 import warnings; warnings.simplefilter('ignore')
 import tensorflow.compat.v1 as tf
+
+# for convenience
 a = np.array
 
 def define_model(path_to_model):
-
+    """returns model and tf session"""
     import tensorflow.compat.v1 as tf
     tf.disable_v2_behavior()
     os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
@@ -33,29 +35,37 @@ def define_model(path_to_model):
     return vgg, session
 
 def extract_stimuli(path_to_stimuli): 
+    """returns experimental stimuli"""
     
+    # determine directory of stimuli
     all_directories = np.sort(os.listdir(path_to_stimuli))
+    # initialize data structures 
+    stimuli, meta = {}, {} 
 
-    stimuli = {} 
-    meta = {} 
     for i_directory in [i for i in all_directories if i in ['FACES', '3DGREYSC'] ]: 
+        
+        # determine path to directory
         file_path = os.path.join(path_to_stimuli, i_directory)
+        # set prefix all stimuli 
         prefix = np.sort([int(i[0:-4]) for i in os.listdir(file_path)])
-
         # load and shape image into correct size
         stimuli[i_directory] = [imresize(a(Image.open(os.path.join(file_path, str(i_stim) + '.bmp' ))), (224, 224)) for i_stim in prefix]  
-
+        # get labels for file paths 
         identifiers = [i[-5:-4] for i in os.listdir(file_path)]
+        # identify viewpoints 
         n_viewpoints = len(np.unique(identifiers))
+        # identify categories 
         n_categories = len(identifiers)/n_viewpoints
-
+        # store metadata 
         meta[i_directory] = {'identifiers':identifiers, 
                             'n_viewpoints':n_viewpoints, 
                             'n_categories':n_categories}
 
-    # generate snow conditions
+    # generate "low" snow condition stimuli
     stimuli['3DGREYSC_snow_1'] = [snow(i_image,1) for i_image in stimuli['3DGREYSC']] 
+    # generate "medium" snow condition stimuli
     stimuli['3DGREYSC_snow_2'] = [snow(i_image,2) for i_image in stimuli['3DGREYSC']] 
+    # generate "high" snow condition stimuli
     stimuli['3DGREYSC_snow_3'] = [snow(i_image,3) for i_image in stimuli['3DGREYSC']]
 	   
     return stimuli, meta, n_viewpoints, n_categories
@@ -76,16 +86,21 @@ def snow(i_image, magnitude):
     
 def generate_trial(i_group, noise_magnitude=0, visualize=1, input_type='human'): 
     
+    # set group name for labeling purposes 
     if "3DGREYSC" in i_group: i_group = i_group[:8]
-    
+    # determine number of viewpoints 
     n_viewpoints = meta[i_group]['n_viewpoints']
+    # determine number of categories 
     n_groups = meta[i_group]['n_categories']
+    # identify the target identify for this random trial 
     target_identity = np.random.randint(n_groups)
-    
+    # generate set of all possible distractor identities 
     possible_distractor_identity = [i for i in np.arange(n_groups) if i !=target_identity]
+    # select distractor identity for this trial 
     distractor_identity = possible_distractor_identity[np.random.randint(len(possible_distractor_identity))]
-    
+    # determine viewpoint of target in this trial 
     target_viewpoint = np.random.randint(n_viewpoints)
+    # determine number of viewpoints for this trial -- different for faces and objects 
     if i_group == 'FACES': 
         distractor_viewpoints = np.random.permutation([i for i in np.arange(n_viewpoints) if i !=target_viewpoint])
     else: 
@@ -93,46 +108,48 @@ def generate_trial(i_group, noise_magnitude=0, visualize=1, input_type='human'):
         
     # now convert these to image indices
     ij_target = target_viewpoint+(target_identity*n_viewpoints)
+    # determine distractors 
     ij_distractors = [i_distractor + (distractor_identity*n_viewpoints) for i_distractor in distractor_viewpoints]
+    # shuffle order of distractors 
     ij_distractors = np.random.permutation(ij_distractors)
+    # convert oddity to a list 
     trial_stims = [ij_target]
+    # add the typical objecst to the list -- the oddity is first 
     trial_stims.extend(ij_distractors)
-    
-    if visualize: 
-        
-        show_trial_stims(i_group, trial_stims, n_viewpoints, noise_magnitude, input_type=input_type)
     
     # return the indices of these trial stims
     return [int(i) for i in trial_stims]
 
 def model_responses_to_stimuli(vgg, sess, stimuli, i_exp):  
     
+
     print('extracting model responses for stimulus set:', i_exp)
+    
+    # define model layers to extract responses from and their names 
     layer_map = {'conv1_1': vgg.conv1_1, 'conv1_2':vgg.conv1_2, 'pool1': vgg.pool1, 
                  'conv2_1': vgg.conv2_1, 'conv2_2':vgg.conv2_2, 'pool2': vgg.pool2, 
                  'conv3_1': vgg.conv3_1, 'conv3_2':vgg.conv3_2, 'conv3_3':vgg.conv3_3, 'pool3': vgg.pool3, 
                  'conv4_1': vgg.conv4_1, 'conv4_2':vgg.conv4_2, 'conv4_3':vgg.conv4_3, 'pool4': vgg.pool4, 
                  'conv5_1': vgg.conv5_1, 'conv5_2':vgg.conv5_2, 'conv5_3':vgg.conv5_3, 'pool5': vgg.pool5, 
-                 'fc6': vgg.fc1, 
-                 'fc7':vgg.fc2, 
-                 'fc8':vgg.fc3l, 
-                }
+                 'fc6': vgg.fc1, 'fc7':vgg.fc2, 'fc8':vgg.fc3l}
     
-    labels, activations, errors, removed_pairs = [], [], [], [] 
+    # initialize data structure 
     model_responses = {l:[] for l in list(layer_map)} ; 
+    # create pixel data structure 
     model_responses['pixel'] = [] 
     
     for i_image in range(len(stimuli[i_exp])):
     
         # format images
         image_i = np.expand_dims(np.repeat(stimuli[i_exp][i_image][ :, : , np.newaxis], 3, axis=2), axis=0)
-        
         # extract model representations 
         i_responses = sess.run([[layer_map[i] for i in layer_map]], feed_dict={vgg.imgs: image_i})[0]
         
         for i in range(len(list(layer_map))): 
             
+            # append pixel level representation
             model_responses['pixel'].append( stimuli[i_exp][i_image].flatten() ) 
+            # append model responses to trial 
             model_responses[list(layer_map)[i]].append(i_responses[i].flatten() ) 
             
     return model_responses
@@ -140,29 +157,41 @@ def model_responses_to_stimuli(vgg, sess, stimuli, i_exp):
 def run_single_experiment(model_data, i_category, n_subjects, n_trials):
     
     print('estimating model performance for %d pseudosubjects completing %d trials'%(n_subjects, n_trials))
-         
+    
+    # data structure to extract off diagonal 
     x = np.array(list(range(6)))
+    # define all layers 
     layers = list(model_data)
+    # insert pixles at beginning of list 
     layers.insert(0, 'pixel')
+    # initialize data structure for trial decision
     trial_decision = {l:[] for l in layers}
-    condition_accuracy = {l:[] for l in layers}
     
     for i_subject in range(n_subjects):  
         
         for i_iteration in range(n_trials): 
             
+            # generate trial -- returns indices 
             trial_stims = generate_trial(i_category, visualize=0)
             
             for i_layer in layers: 
                 
+                # extract model responses for trial generated above 
                 responses = [model_data[i_layer][i] for i in trial_stims]
+                # determine covariance matrix for trial 
                 trial_covariance = np.corrcoef(responses)
+                # extract off diagonal from covariance matrix 
                 trial_decision_space = np.array([trial_covariance[i, x[x!=i]] for i in x])
+                # sort off diagonal covariance
                 trial_decision_space.sort()
+                # identify model-selected oddity 
                 i_choice = trial_decision_space[:,-1].argmin() 
+                # determine accuracy of model on this trial (correct response is 0) 
                 correct = i_choice == 0 
+                # append model accuracy
                 trial_decision[i_layer].append(correct)
     
+    # average accuracy across trials 
     condition_accuracy = {l: np.mean(trial_decision[l]) for l in layers}
     
     return condition_accuracy

@@ -25,15 +25,20 @@ def load_image_data(base_directory):
     stimuli = {} 
 
     for i_slide in slides:
-
+        
+        # initialize data structure 
         stimuli[i_slide] = {} 
+        # define human readable name 
         names = [f + '.png' for f in files if '_' + str(i_slide)+'_' in f]
         # extract and resize all images in trial
         imgs = [imresize(a(Image.open(os.path.join(image_path,i))),(224,224))[:,:,0:3] for i in names]
-        # load and shape image into correct size
+        # store images
         stimuli[i_slide]['images'] = imgs
+        # store name 
         stimuli[i_slide]['labels'] = names
+        # store number of groups 
         stimuli[i_slide]['n_groups'] = int((len(names)-1)/2)
+        # store difficulty
         stimuli[i_slide]['difficulty'] = difficulty['level'][int(i_slide)-1]
         
     return stimuli, difficulty
@@ -84,12 +89,21 @@ def model_responses_to_stimuli(vgg, sess, stimuli):
     return data
 
 def evaluate_trial(trial_responses, correct_index=0):
+    """returns model performance on trial"""
+    
+    # set structure to extract off diagonal 
     x = np.array(list(range(len( trial_responses ))))
+    # determine item-by-item covariance matrix from model responses
     trial_covariance = np.corrcoef(trial_responses)
+    # extract off diagonal 
     trial_decision_space = np.array([trial_covariance[i, x[x!=i]] for i in x])
+    # sort off diagonal 
     trial_decision_space.sort()
+    # determine model-selected oddity
     i_choice = trial_decision_space[:,-1].argmin()
+    # determine whether model selected oddity is correct
     correct = i_choice == (correct_index)
+
     return correct
 
 def determine_model_performance(model_responses): 

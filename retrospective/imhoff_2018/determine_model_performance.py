@@ -6,6 +6,7 @@ import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
 
 def load_model(path_to_model):
+    """return model and session"""
     session = tf.Session()
     vgg16 = imp.load_source('vgg16', os.path.join(path_to_model, 'vgg16.py'))
     imgs = tf.placeholder(tf.float32, [None, 224, 224, 3])
@@ -13,7 +14,8 @@ def load_model(path_to_model):
     return vgg, session
 
 def model_performance(model, session, image_path):
-
+    """returns model performance on experiment"""
+    
     # all images in stimulus directory
     images = np.sort( [i for i in os.listdir(image_path) if 'BMP' in i] )
     # all unique trials

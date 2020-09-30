@@ -1,26 +1,32 @@
 experiment_id = jsPsych.randomization.randomID(20)
+
+//params.group_type = ['even', 'odd'][ 1 * (Math.random() > .6 )]
+//params.iteration = params.iteration + params.group_type 
+//console.log(params.iteration)
+
 // instructions up to practice trials: includes visualization of trials and responses
 var instructions = {
   type: "instructions",
   pages: [
     // welcome page
     "<p style= 'font-size:200%' ><b>Welcome to our experiment!</b></br></p>" + 
-    "<p>This is a challenging visual task where your bonus depends on your performance</p>" + 
+    "<p>This is a challenging visual task where your bonus depends on your performance.</p>" + 
     "<p><b>You'll be able to earn up to $" + (params.max_experiment_bonus).toFixed(2) + 
     " in less than " + params.completion_time + " minutes, but only if you do well.</b></p>" + 
     "<p>We want you to perform well, so we'll start off with some instructions.</p>", 
     // example trial 
     "<p style='font-size: 150%'><b>Experiment Layout</b></p>" +
-    "<p>In each trial, you'll be looking at four black and white images at the center of the screen, like this</p>" + 
-    '<p><img  style="width:30%" src="utils/example_trial.png"></img></p>'+    
-    "<p>Three of these images will be of the same object shown from different viewpoints." + 
-    "<br>One will be an image of a different object. We'll call the different object <b>the oddity</b>. ", 
+    "<p>In each trial, you'll be looking at three black and white images at the center of the screen, like this:</p>" + 
+    '<p><img  style="width:40%" src="utils/example_trial.png"></img></p>'+    
+    "<p><b>You can always ignore the backgrounds; the backgrounds are irrelevant.</b><br>" + 
+    "Two of the images (superimposed on the backgrounds) will be of the same object shown from different viewpoints." + 
+    "<br>One of these objects will be an image of a different object. We'll call the different object <b>the oddity</b>. ", 
     // explicit about oddity in example trial
     "<p style='font-size:150%'><b>Your goal</b><p>" + 
     "<p>In every trial, your task is to look at all the images presented to you and select the oddity. </p>" + 
-    '<p><img  style="width:30%" src="utils/example_trial_explicit.png"></img></p>' +  
-    "<p>In the example above, there are three images of the same car, shown from different viewpoints." + 
-    "<br>One of the images of of a Lion. The lion is the oddity</p>",  
+    '<p><img  style="width:40%" src="utils/example_trial_explicit.png"></img></p>' +  
+    "<p><br>In the example above, there are two images of the same Elephant, shown from different viewpoints." + 
+    "<br>One of the images is of a Lion. The lion is the oddity</p>",  
     // bonus info 
     "<p style='font-size: 150%'><b>Bonus information</b></p>" +
     "<p>You'll earn $" + params.trial_bonus.toFixed(2) + ' towards your bonus for every trial you get right; ' +  
@@ -35,12 +41,13 @@ var instructions = {
     "<p>You have ten seconds to complete each trial; if you don't respond in this time the trial will be marked as incorrect</p>",  
     // keyboard responses
     "<p style='font-size: 150%'><b>Response keys</b></p>" +
-    "Once you identify the oddity, you'll have to use the following keys on your keyboard to select it: 4, 9, r, i</p>" + 
+    "Once you identify the oddity, you'll have to use the following keys on your keyboard to select it: &#x2190;, &#x2192; or &#x2193; </p>" + 
     "<p>" + 
-      "<b>4</b>: top left &nbsp&nbsp &nbsp&nbsp&nbsp&nbsp<b>9</b>: top right" + 
-      "<br><b>r</b>: bottom left &nbsp<b>i</b>: bottom right</p>" + 
+      "<b>&#x2190;</b> (Left Arrow) Object on the left" + 
+      '<br><b>&#x2192;</b> (Right Arrow) Object on the right' + 
+      "<br><b>&#x2193;</b> (Down Arrow) Object on bottom</p>" + 
     '<p><img  style="width:30%" src="utils/key_map.png"></img></p>'+ 
-    "<p>These might seem like awkward options, but once you get your hand in place it should be clear why.</p>",
+    "<p>We hope that these keyboard options are intuitive once you start using them! If not, let us know :)</p>",
     // practice trial description 
     "<p style='font-size: 150%'><b>Practice trials</b></p>" + 
     "<p>We'll give you a few practice trials now, to get familiar with the response keys and see what the experiment is like.<br>" + 
@@ -50,20 +57,22 @@ var instructions = {
   choices: ['space'],
   show_clickable_nav: true,
   show_page_number: false,
-  post_trial_gap: 500, 
+  post_trial_gap: 500,
+  on_finish: function(){
+    document.body.style.backgroundColor = "#808080"
+  }
 };
 
 // practivce trial choice array 
 var practice_trial  = {
   type: 'choice-array',
   stimulus: '',   
-  choices: ['4', '9', 'r', 'i'], 
-  prompt:'Use either <b>4</b>, <b>9</b>, <b>r</b>, or <b>i</b> to choose the oddity',
+  choices: [37, 39, 40], 
+  prompt: '',  // 'Use either the <b>Left</b>, <b>Right</b>, or <b>Down</b> Arrow to choose the oddity',
   response_ends_trial: true,
   post_trial_gap: 200,
   on_start: function(data) {
     practice_index = Math.round(Math.random() * (params.reference_categories.length-1) )
-    console.log('params:', params.reference_categories[practice_index], 'index:', practice_index)
     test_trial = generate_stimuli(params.reference_categories[practice_index], params.reference_categories[practice_index], 'V3', params.stimulus_path)
     data.stimulus_info = test_trial
     data.stimulus =  test_trial.stimuli
@@ -83,13 +92,11 @@ var practice_trial  = {
     
     if (n_practice_trials >= params.practice_criterion) { 
       correct_count = practice_trials.filter({correct:true}).count() 
-      //console.log('count reached, correct_count:', correct_count)
     } else { correct_count = 0} 
     
     if ( ( correct_count >= params.practice_criterion)  ) {
       data.practice_threshold_met = true
     }
-    //console.log((data.time_elapsed/1000).toFixed(2) )
  }
 }
 
@@ -137,7 +144,8 @@ var  practice_block= {
     } else {
       return true; // continue loop 
     }
-  }
+  }, 
+
 }
 
 var consent_form = { 
@@ -150,6 +158,9 @@ var consent_form = {
     '</div>' + 
     "<p>Press 'y' if you agree to participate in this study</p>" ,  
   choices: ['y'],
+  on_start: function(){
+    document.body.style.backgroundColor = "#ffffff"
+  }, 
 }
 
 // experimental screens between trials
@@ -173,10 +184,8 @@ for (i_trial=0; i_trial < params.n_trials; i_trial++) {
   
   // select our reference categories in equal proportion 
   var typicals_ = params.reference_categories [ Math.floor(i_trial/(params.n_trials/params.reference_categories.length)) ] 
-  
   // select distractor category 
   if (i_trial%params.between_frequency==0) {
-    //console.log('BETWEEN!') 
     // only select from non-typical categories  
     var remaining_ = Object.keys(meta).filter(function(value){ return value != typicals_;});
     oddity_ = remaining_[ get_random_index(remaining_) ] 
@@ -195,7 +204,7 @@ for (i_trial=0; i_trial < params.n_trials; i_trial++) {
   } else {
     i_variation = params.experimental_variation_level
   }
- 
+  
   // generate stimuli from typical and oddity categories
   stim_info = generate_stimuli(typicals_, oddity_, i_variation, params.stimulus_path)
   stim_info.oddity_type = oddity_type 
@@ -204,13 +213,13 @@ for (i_trial=0; i_trial < params.n_trials; i_trial++) {
     stimulus_info: stim_info, 
     stimulus: stim_info.stimuli,
     correct_response: stim_info.correct_response, 
-    choices: ['4', '9', 'r', 'i'],
-    prompt:'<br>Use either <b>4</b>, <b>9</b>, <b>r</b>, or <b>i</b> to choose the oddity',  
+    choices: [37, 39, 40],
+    prompt: '', // '<br>Use either <b>4</b>, <b>9</b>, <b>r</b>, or <b>i</b> to choose the oddity',  
     response_ends_trial: true,
     trial_duration: params.max_decision_time,
     post_trial_gap: 200,
     on_finish: function(data) {
-      
+      console.log( 'ON FINISH:', data.correct_response, params.key_, data.key_press ) 
       data.correct = data.correct_response == params.key_[data.key_press]
       data.array_type = params.array_type 
       data.trial_type = 'experiment'
@@ -237,7 +246,10 @@ var full_screen_start = {
   "and a big penalty (-$" + params.trial_penalty.toFixed(2) + ") for each mistake!<p>" + 
   "<p>In the experiment, you'll recieve feedback at the end of the experiment, not after every trial</p>", 
   button_label: '<p style="color:"><b>Click to enter full screen and begin experiment</b></p>', 
- fullscreen_mode: true
+ fullscreen_mode: true, 
+ on_finish: function(){ 
+  document.body.style.backgroundColor = "#808080"
+ }
 };
 
 var experiment_debrief = {
@@ -268,7 +280,7 @@ var experiment_debrief = {
       columns: 100
     }
   ],
-  button_label: "Continue to the 'Submit' button for mturk",
+  button_label: "Click to continue on to MTurk's 'Submit' button",
   on_finish:  function() {
     data = {}
     data.params = params

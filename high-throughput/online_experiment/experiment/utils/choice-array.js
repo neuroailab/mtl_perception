@@ -76,13 +76,13 @@ jsPsych.plugins["choice-array"] = (function() {
     
     var new_html = trial.prompt
     new_html += '<br><div>' + 
-      '<div style="text-align:center; display: flex" >' + 
+      '<div>' + // style="text-align:center;  display: flex" >' + 
         '<img style="flex: 1"  src="'+trial.stimulus[0]+'" id="choice-array-stimulus"></img>'+
         '<img style="flex: 2" src="'+trial.stimulus[1]+'" id="choice-array-stimulus"></img>'+
       '</div>' + 
-      '<div style="text-align:center; display: flex" >' +
-        '<img style="flex: 3" src="'+trial.stimulus[2]+'" id="choice-array-stimulus"></img>'+
-        '<img style="flex: 4" src="'+trial.stimulus[3]+'" id="choice-array-stimulus"></img>'+
+      '<div style="text-align:center" >' +
+        '<img style="" src="'+trial.stimulus[2]+'" id="choice-array-stimulus"></img>'+
+//        '<img style="flex: 4" src="'+trial.stimulus[3]+'" id="choice-array-stimulus"></img>'+
       '</div>'+ 
       '</div>'
 

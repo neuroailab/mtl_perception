@@ -309,7 +309,7 @@ def focal_neuroanatomical_dependencies(pls_fits, retrospective, meta_statistics,
     f_ax.text(-0.08, 1.05, 'c', transform=f_ax.transAxes,fontsize=13, va='top', ha='right')
 
     # only extract human fits to model layers that have fits to electrophysiological data
-    _meta = meta_statistics[np.nonzero(meta_statistics.layer == pls_fits['layers'][0])[0][0]:]
+    _meta = meta_statistics[[i in pls_fits['layers'] for i in meta_statistics.layer]]
 
     # params for both plots
     i_size = 30
@@ -774,3 +774,184 @@ def unfoveated_model_behavior(retrospective, mm_select, novel, _location):
     ax = fig.add_subplot(gs[1:2, 3:4]);
     face_novel_human(novel, 'vggface', 'rt', PARAMS, view_type='original')
     plt.savefig(os.path.join(_location, 'supplemental_figure_four.pdf'), format='pdf', bbox_inches = "tight")
+
+
+
+def show_misclassified_studies(misclassified, _location):
+    study_order = ['buffalo', 'knutson', 'barense', 'inhoff']
+
+    titles = {'buffalo': 'Buffalo et al. 1999 (Fractals)\nModel Accuracy: 100%',
+             'knutson': 'Knutson et al. 2011 (Object Pairs)\nModel Accuracy: 100%',
+             'barense': 'Barense et al. 2007 (Fribbles)\nModel Accuracy: 100%',
+             'inhoff': 'Inhoff et al. 2018 (Face Morphs)\n Model Accuracy: 100%'}
+
+    params = {'m':'p', 's':70, 'C0': '#130619', 'C1': '#ff3edf','x_label':15, 'title': 13}
+    
+    def gradient_display(x_, y_):
+        colors = [i.hex for i in colour.Color(params['C0']).range_to(colour.Color(params['C1']), (100))]
+        [plt.plot(np.array([i, i+1])/190 + x_,(y_, y_), color=colors[i], linewidth=8) for i in range(len(colors))];
+        plt.annotate('"STIMULUS COMPLEXITY"', xy=[x_-.08, y_+.05])
+        plt.annotate('LOW', xy=[x_-.03, y_ - .08 ], fontsize=8)
+        plt.annotate('HIGH', xy=[x_+.43, y_ - .08 ], fontsize=8)
+    
+    def get_gradient(n):
+        g = [i.hex for i in colour.Color(params['C0']).range_to(colour.Color(params['C1']), n)]
+        return [params['C1'], g][len(g)>1]
+    
+    i = 1
+    plt.figure(figsize=[18, 4])
+    for i_study in study_order:
+        ax = plt.subplot(1, 4, i)
+        plt.plot([0,1], [0, 1], linestyle='--', color='grey', zorder=-1)
+
+        i_data = misclassified[[ i_study in i.lower() for i in misclassified.study ]]
+
+        ax.text(-0.05, 1.1,  ['a','b','c','d'][i-1],
+                transform=ax.transAxes,fontsize=14, va='top', ha='right')
+        colors = get_gradient(len(i_data))
+
+        if i_study == 'knutson': gradient_display(.05, .95)
+        if i_study == 'buffalo':
+            p = {'marker':params['m'], 's':params['s']}
+
+            plt.scatter([], [], **p, edgecolor='black', facecolor='',  label='PRC-LESION')
+            plt.scatter([], [], **p, edgecolor='black', facecolor='black', label='PRC-INTACT')
+            plt.legend(framealpha=0, title='PATIENT GROUP')
+
+        plt.scatter(y=i_data['control'], x=i_data['model_performance'],
+                    marker=params['m'], s=params['s'], edgecolor=colors, facecolor=colors)
+
+        plt.scatter(y=i_data['prc_lesion'], x=i_data['model_performance'],
+                    marker=params['m'], s=params['s'], edgecolor=colors, facecolor='white')
+
+
+        plt.title(titles[i_study], y=1.05)
+        plt.xlim(-.1, 1.1) ; plt.ylim(-.1, 1.1)
+        i+=1
+    
+    plt.savefig(os.path.join(_location, 'S2.pdf'), format='pdf', bbox_inches = "tight")
+
+def transformed_model_performance(retrospective, summary_location, _location):
+    # weighted and uniform model performance on novel experiment
+    with open(summary_location, 'rb') as f:
+        _s = pickle.load(f)
+        _s = {i.lower():_s[i] for i in _s}
+
+    # generate dataframe
+    df = pandas.DataFrame({})
+    for c in _s:
+        for t in _s[c]:
+            for o in _s[c][t]:
+                trial = _s[c][t][o]
+                i_comparison = {'distance':np.mean(trial['distance_accuracy']),
+                                'linear':np.mean(trial['linear_accuracy'])}
+                df = df.append(i_comparison, ignore_index=True)
+
+    # for convenience
+    def plot_nice_line(model_, params={}, lim=0, title=''):
+        m, b = model_.coef_[0], model_.intercept_[0]
+        xs = np.array([lim, min(1 , ( ( 1 - b) / m ))])
+        plt.plot(xs, xs * m + b, **params)
+
+    # fit between weighted and unweighted/distance performance
+    transpose = LinearRegression().fit(np.reshape(df['distance'].values, (-1,1)),
+                                       np.reshape(df['linear'].values, (-1, 1)))
+
+    ###
+    fig = plt.figure(figsize=[9,4])
+
+    # line width for all figures
+    lw = 5
+    # set style for all figures
+    linestyle = '--'
+
+    # first figure
+    ax = fig.add_subplot(121)
+    # label figure
+    ax.text(-0.05, 1.08,'a',transform=ax.transAxes,fontsize=12, va='top', ha='right')
+
+    # plot distance readout and weighted readout
+    plt.scatter(x=df['distance'], y=df['linear'],
+                # aesthetics
+                facecolor='black', edgecolor='', linewidth=.2, s=15)
+
+    # plot
+    plot_nice_line(transpose,
+     {'linewidth':lw, 'color':'#229aa6', 'zorder':-5,
+      'solid_capstyle': 'round', 'label':'transform'}, lim=.2)
+
+    # plot diagonal
+    plt.plot([.3, 1], [.3, 1],
+             linestyle=':', color='grey', zorder=-3, label='prediction',alpha=.8)
+
+    # axis labels and legends
+    plt.xlabel(r'Model Performance$_{unweighted}$')
+    plt.ylabel(r'Model Performance$_{weighted}$')
+    plt.xticks(fontsize=7); plt.yticks(fontsize=7);
+    plt.legend(framealpha=0, fontsize=8, title='Readout', title_fontsize=9)
+
+    # second plot
+    ax = fig.add_subplot(122)
+    # label figure
+    ax.text(-0.05, 1.08, ['a','b','c'][1], transform=ax.transAxes,fontsize=12, va='top', ha='right')
+    # set colors for groups
+    prc_color, hpc_color = '#a6229a', '#a3a3a3'
+
+    # model performance from an it-like layer
+    _x = retrospective['conv5_1'].values
+    # prc lesioned performance
+    _y = retrospective['prc_lesion'].values
+
+    # find line of best fit between model and prc-lesioned performance
+    _prcmodel = LinearRegression().fit(np.reshape(_x, (-1,1)), np.reshape(_y, (-1, 1)))
+
+    # plot line of best fit between model and prc-lesioned performance
+    plot_nice_line(_prcmodel, { 'linestyle':linestyle, 'color':prc_color, 'linewidth':lw-3,
+                   'label':'unweighted', 'zorder':1, 'alpha':.8, 'solid_capstyle': 'round'})
+
+    # transform model performance according to what we know from the novel dataste (fig 1)
+    transform_model_performance = transpose.predict(np.expand_dims(retrospective['conv5_1'], 1))
+    # for aestietics: make sure our plot fits within the visualization box
+    x_fit = [min(i[0], 1) for i in transform_model_performance]
+    # find line of best fit between transformed model performance and prc-lesioned beahvior
+    _prcmodelT = LinearRegression().fit(np.reshape(x_fit, (-1,1)), np.reshape(_y, (-1, 1)))
+    # plot transformed model performance
+    plot_nice_line(_prcmodelT, {'color':prc_color, 'alpha':1, 'linewidth':lw, 'alpha':.8,
+                                'label':'transformed', 'solid_capstyle': 'round', 'zorder':3})
+    # label
+    transformed_legend = plt.legend(framealpha=0, loc=4, title='Fit to Behavior',
+                                    title_fontsize=8, fontsize=7)
+
+
+    # fit line between model performance and prc-intact participants
+    _model = LinearRegression().fit(np.reshape(_x, (-1,1)),
+                                    np.reshape(retrospective['prc_intact'].values, (-1, 1)))
+    # visualize model fit to prc-intact subjects
+    plot_nice_line(_model, {'color':hpc_color, 'alpha':1, 'linewidth':lw-3, 'linestyle':linestyle,
+                            'zorder':-3, 'solid_capstyle': 'round'})
+    # find line of best fit between transformed model performance and prc-intact beahvior
+    _model = LinearRegression().fit(np.reshape(x_fit, (-1,1)), np.reshape(_y, (-1, 1)))
+    # visualize transormed model fit to prc-intact behavior
+    plot_nice_line(_model, {'color':hpc_color, 'alpha':.8,  'linewidth':lw,
+                            'alpha':1, 'zorder':2, 'solid_capstyle': 'round', })
+
+    # plot diagonal
+    plt.plot([0, 1], [0, 1], linestyle=':', color='grey', zorder=-3, label='prediction',alpha=.8)
+
+    plt.xlabel('Model Performance')
+    plt.ylabel('Human Performance')
+    plt.xticks(fontsize=7);
+    plt.yticks(fontsize=7);
+
+    a, = plt.plot([],[],
+        **{'color':prc_color, 'alpha':.8, 'linewidth':lw, 'solid_capstyle': 'round',
+           'label':'transformed', 'zorder':-5})
+
+    b, = plt.plot([],[],
+       **{'color':hpc_color, 'alpha':1, 'linewidth':lw, 'solid_capstyle': 'round'})
+
+    leg2 = ax.legend([b, a],['prc-intact', 'prc-lesion'], bbox_to_anchor=[1, .40],
+                     title='Group', framealpha=0, title_fontsize=9, fontsize=8)
+
+    ax.add_artist( transformed_legend )
+    plt.savefig(os.path.join(_location, 'S3.pdf'), format='pdf', bbox_inches = "tight")

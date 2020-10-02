@@ -284,10 +284,10 @@ def misclassified_experiments(directory):
 
     model = {} 
 
-    barense_label = 'Barense et al. 2007t'
+    barense_label = 'Barense et al. 2007'
     buffalo_label = 'Buffalo et al. 1998'
     knutson_label = 'Knutson et al. 2011'
-    imhoff_label  = 'Imhoff et al. 2018'
+    imhoff_label  = 'Inhoff et al. 2018'
 
     with open(os.path.join(directory, 'buffalo_1998/model_performance.pickle'), 'rb') as f: 
         model[buffalo_label] = pickle.load(f)['zero_delay']
